@@ -12,50 +12,76 @@ app.get('/', function(request, response){
 server.listen(5000, function(){
   console.log('Starting server on port 5000');
 });
-// Add the WebSocket handlers
+//Add the WebSocket handlers
+//io.on('connection', function(socket) {
+//});
+
+var playercount = 0;
+var players = {};
+var SOCKETS ={};
 io.on('connection', function(socket) {
+	socket.on('new player', function() {
+    	playercount += 1;
+		SOCKETS[socket.id] = playercount;
+		
+		players[playercount] = {
+      		ID: socket.id,
+			choice: 4,
+      		playernum: playercount,
+			draw: 0,
+			Win: 0
+		
+    	};
+		//var player = players[socket.id] || {};
+		io.sockets.emit('message', players[playercount].playernum);
+		io.sockets.emit('message', socket.id);
+	});
+
+	socket.on('choice', function(data) {
+		var player = players[SOCKETS[socket.id]] || {};
+		if (data.Rock) {
+			player.choice = 0;
+		}
+		if (data.Paper) {
+			player.choice = 1;
+		}
+		if (data.Scissors) {
+			player.choice = 2;
+		}
+		var ready = true;
+		for (var id in players) {
+			if(player.choice > 2){
+			ready = false;
+			}
+		}
+		if (ready) {			
+			var outcome = players[1].choice - players[2].choice;
+			switch(outcome){
+				case 0: // draw
+					players[1].draw += 1;
+					players[2].draw += 1;
+					break;
+				case 1: // Player 1 Wins
+					players[1].Win += 1;
+					break;
+				case -2: // Player 1 Wins
+					players[1].Win += 1;
+					break;
+				case 2: // Player 2 Wins
+					players[2].Win += 1;
+					break;
+				case -1: //Player 2 Wins
+					players[2].Win += 1;
+					break;
+			}
+			io.sockets.emit('state', players);
+			player[1].choice = 4;
+			player[2].choice = 4;
+			
+		}
+	});
 });
 
-var players = {};
-io.on('connection', function(socket) {
-  socket.on('new player', function() {
-    players[socket.id] = {
-      win: 0,
-      
-    };
-});
-var Player1Ready: false;
-var Player1Choice: 0;
-var Player2Choice: 0;
-  socket.on('choice', function(data) {
-    
-	var player = players[socket.id] || {};
-    if (Player1Ready === false){
-		if (data.Rock) {
-			Player1Choice = 1;
-		}
-		if (data.Paper) {
-			Player1Choice = 2;
-		}
-		if (data.Scissor) {
-			Player1Choice = 3;
-		}
-		Player1Ready = true;
-    }else{
-		if (data.Rock) {
-			Player2Choice = 1;
-		}
-		if (data.Paper) {
-			Player2Choice = 2;
-		}
-		if (data.Scissor) {
-			Player2Choice = 3;
-		}
-	}
-  });
-function(Player1Choice, Player2Choice){
-	
-}
 
 /* ********************* CODE FROM EXAMPLE ***********************
 setInterval(function() {
